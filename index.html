@@ -37,6 +37,25 @@
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
         }
 
+        /* Contenedor de Logos */
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .logo-container img {
+            max-height: 50px; /* Altura máxima para los logos */
+            width: auto;
+            border-radius: 8px; /* Bordes suaves para los logos */
+            opacity: 0.9;
+        }
+
+
         h1 {
             color: #00bcd4; /* Azul Acuario como acento principal */
             text-align: center;
@@ -44,6 +63,9 @@
             margin-bottom: 30px;
             border-bottom: 2px solid #00bcd433;
             padding-bottom: 10px;
+            /* Se ha movido el border-bottom del h1 al logo-container y se ha ajustado aquí. */
+            border-bottom: none; 
+            margin-top: 0;
         }
 
         /* Estilo para etiquetas y inputs */
@@ -179,6 +201,16 @@
 <body>
 
     <div class="calculator-container">
+        
+        <!-- Nuevo Contenedor de Logos -->
+        <div class="logo-container">
+            <!-- LOGO 1: Reemplaza esta URL con la ruta de tu primer logo -->
+            <img src="https://placehold.co/100x50/373737/FFFFFF?text=Logo+A" alt="Logo de Producto A" onerror="this.src='https://placehold.co/100x50/373737/FFFFFF?text=Logo+A'">
+            
+            <!-- LOGO 2: Reemplaza esta URL con la ruta de tu segundo logo -->
+            <img src="https://placehold.co/100x50/00bcd4/1e1e1e?text=Logo+B" alt="Logo de Producto B" onerror="this.src='https://placehold.co/100x50/00bcd4/1e1e1e?text=Logo+B'">
+        </div>
+
         <h1>Calculadora de Créditos</h1>
         
         <!-- Controles para alternar Modo de Cálculo -->
@@ -234,35 +266,35 @@
 
     <script>
         // ----------------------------------------------------
-        // 2. ESTRUCTURA DE DATOS (JAVASCRIPT) - Factores del Prompt
+        // 2. ESTRUCTURA DE DATOS (JAVASCRIPT) - Incluye FACTOR y MONTO MÍNIMO
         // ----------------------------------------------------
         const FACTORES_CREDITO = {
             "CSP": {
-                12: 121.7578,
-                24: 144.2722,
-                36: 168.7344,
-                48: 195.4496,
-                54: 209.0502,
-                60: 223.5120
+                12: { factor: 121.7578, min: 35000 },
+                24: { factor: 144.2722, min: 35000 },
+                36: { factor: 168.7344, min: 15000 },
+                48: { factor: 195.4496, min: 15000 },
+                54: { factor: 209.0502, min: 10000 },
+                60: { factor: 223.5120, min: 10000 }
             },
             "OPCIPRES": {
-                36: 167.2951,
-                48: 191.3530,
-                54: 203.3592,
-                60: 215.9140
+                36: { factor: 167.2951, min: 70000 },
+                48: { factor: 191.3530, min: 50000 },
+                54: { factor: 203.3592, min: 45000 },
+                60: { factor: 215.9140, min: 30000 }
             },
             "CSB": {
-                36: 162.4367,
-                48: 184.0618,
-                54: 194.4853,
-                60: 206.8665
+                36: { factor: 162.4367, min: 145000 },
+                48: { factor: 184.0618, min: 100000 },
+                54: { factor: 194.4853, min: 95000 },
+                60: { factor: 206.8665, min: 40000 }
             },
             "MASNOMINA": {
-                24: 144.3720,
-                36: 169.1820,
-                48: 169.0920,
-                54: 194.4851,
-                60: 224.9025
+                24: { factor: 144.3720, min: 8000 },
+                36: { factor: 169.1820, min: 8000 },
+                48: { factor: 169.0920, min: 8000 },
+                54: { factor: 194.4851, min: 80000 },
+                60: { factor: 224.9025, min: 8000 }
             }
         };
 
@@ -297,6 +329,17 @@
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }).format(number);
+        }
+
+        /**
+         * Redondea un valor hacia abajo al múltiplo de 100 más cercano.
+         * Ejemplo: 107594.30 -> 107500
+         * @param {number} value - El valor a redondear.
+         * @returns {number} El valor redondeado.
+         */
+        function roundDownToNearestHundred(value) {
+            if (isNaN(value)) return 0;
+            return Math.floor(value / 100) * 100;
         }
 
         /**
@@ -346,16 +389,16 @@
         }
 
         /**
-         * Obtiene el factor para el producto y plazo seleccionados.
-         * @returns {number|null} El factor porcentual o null si no se encuentra.
+         * Obtiene el factor y monto mínimo para la selección actual.
+         * @returns {{factor: number, min: number}|null} Datos de la configuración o null si no se encuentra.
          */
-        function getFactor() {
+        function getConfig() {
             const producto = productoSelect.value;
             const plazo = plazoSelect.value;
             
             if (producto && plazo) {
-                const factor = FACTORES_CREDITO[producto]?.[parseInt(plazo)];
-                return factor !== undefined ? factor : null;
+                const config = FACTORES_CREDITO[producto]?.[parseInt(plazo)];
+                return config !== undefined ? config : null;
             }
             return null;
         }
@@ -379,15 +422,17 @@
         function calculate() {
             displayError(''); // Limpiar errores anteriores
 
-            const factor = getFactor();
+            const config = getConfig();
             const plazo = parseFloat(plazoSelect.value);
             
-            if (!factor || isNaN(plazo)) {
+            if (!config || isNaN(plazo)) {
                 // Si faltan Producto o Plazo, limpiar y mostrar mensaje de guía
                 resultsSection.innerHTML = '<p style="text-align: center; color: #ccc;">Seleccione un Producto y un Plazo válidos.</p>';
                 return; 
             }
 
+            const factor = config.factor;
+            const montoMinimo = config.min;
             const factorDecimal = factor / 100;
             let resultsHTML = '';
             
@@ -399,12 +444,22 @@
                     resultsSection.innerHTML = '<p style="text-align: center; color: #ccc;">Complete las entradas para ver el resultado.</p>';
                     return;
                 }
+                
+                // **VALIDACIÓN 1: Monto Mínimo**
+                if (monto < montoMinimo) {
+                    displayError(`El monto solicitado (${formatCurrency(monto)}) es menor al mínimo requerido para este producto/plazo: ${formatCurrency(montoMinimo)}.`);
+                    return;
+                }
 
                 // Fórmula: D = (Monto Solicitado * (Factor / 100)) / Plazo
                 const descuentoMensual = (monto * factorDecimal) / plazo;
                 const montoTotalPagar = descuentoMensual * plazo;
 
                 resultsHTML = `
+                    <div class="result-item">
+                        <span>Monto Mínimo Requerido:</span>
+                        <span class="result-value">${formatCurrency(montoMinimo)}</span>
+                    </div>
                     <div class="result-item">
                         <span>Factor Aplicado (${plazo}m):</span>
                         <span class="result-value">${factor.toFixed(4)}%</span>
@@ -414,12 +469,12 @@
                         <span class="result-value">${formatCurrency(monto)}</span>
                     </div>
                     <div class="result-item">
-                        <span>Descuento Mensual ($D$):</span>
-                        <span class="result-value">${formatCurrency(descuentoMensual)}</span>
-                    </div>
-                    <div class="result-item">
                         <span>Monto Total a Pagar:</span>
                         <span class="result-value">${formatCurrency(montoTotalPagar)}</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Descuento Mensual ($D$):</span>
+                        <span class="result-value">${formatCurrency(descuentoMensual)}</span>
                     </div>
                 `;
 
@@ -433,9 +488,22 @@
                 }
                 
                 // Fórmula: P = (Descuento Mensual * Plazo) / (Factor / 100)
-                const montoAlcanzado = (descuento * plazo) / factorDecimal;
+                let montoAlcanzado = (descuento * plazo) / factorDecimal;
+
+                // **CAMBIO 1: Redondeo hacia abajo a múltiplos de 100**
+                const montoRedondeado = roundDownToNearestHundred(montoAlcanzado);
+                
+                // **VALIDACIÓN 2: Monto Mínimo (post-redondeo)**
+                if (montoRedondeado < montoMinimo) {
+                    displayError(`El monto que alcanza (${formatCurrency(montoRedondeado)}) es menor al mínimo requerido: ${formatCurrency(montoMinimo)}. Intente con un descuento mayor.`);
+                    return;
+                }
 
                 resultsHTML = `
+                    <div class="result-item">
+                        <span>Monto Mínimo Requerido:</span>
+                        <span class="result-value">${formatCurrency(montoMinimo)}</span>
+                    </div>
                     <div class="result-item">
                         <span>Factor Aplicado (${plazo}m):</span>
                         <span class="result-value">${factor.toFixed(4)}%</span>
@@ -445,12 +513,12 @@
                         <span class="result-value">${formatCurrency(descuento)}</span>
                     </div>
                     <div class="result-item">
-                        <span>Plazo:</span>
-                        <span class="result-value">${plazo} meses</span>
+                        <span>Monto Bruto Calculado:</span>
+                        <span class="result-value">${formatCurrency(montoAlcanzado)}</span>
                     </div>
                     <div class="result-item">
                         <span>Monto de Préstamo que Alcanza ($P$):</span>
-                        <span class="result-value">${formatCurrency(montoAlcanzado)}</span>
+                        <span class="result-value">${formatCurrency(montoRedondeado)} (Redondeado ▼)</span>
                     </div>
                 `;
             }
