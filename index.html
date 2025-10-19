@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Créditos por Factor</title>
+    <!-- Se ha removido la configuración de PWA que causaba errores de seguridad/origen. -->
+    <meta name="theme-color" content="#1a1a1a">
+    
+    
+    <style>
+        /* ---------------------------------------------------- */
+        /* 4. REQUERIMIENTOS DE INTERFAZ (UI/UX) - DARK MODE & RESPONSIVE */
+        /* ---------------------------------------------------- */
+
+        /* Fuente elegante y fondo oscuro */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #121212; /* Fondo Gris Oscuro Profundo */
+            color: #e0e0e0; /* Texto claro */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Ajuste para evitar sobre-centrado vertical en móvil */
+            min-height: 100vh;
+            transition: background-color 0.3s;
+        }
+
+        /* Contenedor principal centrado */
+        .calculator-container {
+            width: 100%;
+            max-width: 450px; /* Ancho máximo ideal para móvil y desktop */
+            background-color: #1e1e1e; /* Color de tarjeta/fondo de la app */
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            color: #00bcd4; /* Azul Acuario como acento principal */
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #00bcd433;
+            padding-bottom: 10px;
+        }
+
+        /* Estilo para etiquetas y inputs */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #cccccc;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            font-size: 1rem;
+            box-sizing: border-box;
+            -webkit-appearance: none; /* Quita flechas en Chrome/Safari */
+            -moz-appearance: textfield; /* Quita flechas en Firefox */
+        }
+        
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23cccccc' d='M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+        }
+
+        /* Toggle de Modo de Cálculo */
+        .mode-toggle {
+            display: flex;
+            justify-content: space-between;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 25px;
+            font-size: 0.85rem;
+        }
+
+        .mode-toggle input[type="radio"] {
+            display: none;
+        }
+
+        .mode-toggle label {
+            flex-grow: 1;
+            text-align: center;
+            padding: 10px 0;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            margin: 0;
+            font-weight: normal;
+        }
+
+        .mode-toggle input[type="radio"]:checked + label {
+            background-color: #00bcd4;
+            color: #1e1e1e;
+            font-weight: 600;
+        }
+        
+        /* Sección de Resultados */
+        .results {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 30px;
+            border: 1px solid #00bcd455;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #3a3a3a;
+            font-size: 1rem;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #00bcd4; /* Resaltar el resultado final con el color de acento */
+        }
+
+        .result-value {
+            font-weight: 700;
+            color: #ffffff;
+        }
+        
+        .result-item:last-child .result-value {
+            color: #00bcd4;
+        }
+
+        /* Manejo de Errores */
+        .error-message {
+            color: #ff6347; /* Rojo coral para errores */
+            background-color: #ff63471a;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 15px;
+            font-weight: 500;
+            display: none; /* Oculto por defecto */
+        }
+        
+        /* Estilos para Mobile (Pequeños ajustes) */
+        @media (max-width: 500px) {
+            body {
+                padding: 10px;
+                align-items: flex-start; /* Empezar desde arriba */
+            }
+            .calculator-container {
+                padding: 15px;
+                margin-top: 20px;
+            }
+            h1 {
+                font-size: 1.6rem;
+            }
+            .mode-toggle {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator-container">
+        <h1>Calculadora de Créditos</h1>
+        
+        <!-- Controles para alternar Modo de Cálculo -->
+        <div class="mode-toggle">
+            <input type="radio" id="mode-monto" name="calculation-mode" value="monto" checked>
+            <label for="mode-monto">Monto Solicitado → Descuento</label>
+            
+            <input type="radio" id="mode-descuento" name="calculation-mode" value="descuento">
+            <label for="mode-descuento">Descuento Mensual → Monto</label>
+        </div>
+
+        <form id="calculator-form">
+            
+            <!-- Selector de Producto -->
+            <div class="form-group">
+                <label for="producto">Producto:</label>
+                <select id="producto" required>
+                    <option value="" disabled selected>Seleccione Producto</option>
+                    <!-- Las opciones se llenan por JS -->
+                </select>
+            </div>
+            
+            <!-- Selector de Plazo -->
+            <div class="form-group">
+                <label for="plazo">Plazo (Meses):</label>
+                <select id="plazo" required>
+                    <option value="" disabled selected>Seleccione Plazo</option>
+                    <!-- Las opciones se llenan por JS -->
+                </select>
+            </div>
+            
+            <!-- Campo de Entrada (Dinámico) -->
+            <div class="form-group" id="input-monto-group">
+                <label for="monto-solicitado">Monto Solicitado ($P$):</label>
+                <input type="number" id="monto-solicitado" placeholder="Ej: 50000" min="1" required>
+            </div>
+            
+            <div class="form-group" id="input-descuento-group" style="display:none;">
+                <label for="descuento-mensual-input">Descuento Mensual Propuesto ($D$):</label>
+                <input type="number" id="descuento-mensual-input" placeholder="Ej: 5000" min="1" required>
+            </div>
+
+            <!-- Mensaje de Error -->
+            <div class="error-message" id="error-message"></div>
+
+        </form>
+
+        <!-- Sección de Resultados -->
+        <div class="results" id="results-section">
+            <p style="text-align: center; color: #ccc;">Complete las entradas para ver el resultado.</p>
+        </div>
+    </div>
+
+    <script>
+        // ----------------------------------------------------
+        // 2. ESTRUCTURA DE DATOS (JAVASCRIPT) - Factores del Prompt
+        // ----------------------------------------------------
+        const FACTORES_CREDITO = {
+            "CSP": {
+                12: 121.7578,
+                24: 144.2722,
+                36: 168.7344,
+                48: 195.4496,
+                54: 209.0502,
+                60: 223.5120
+            },
+            "OPCIPRES": {
+                36: 167.2951,
+                48: 191.3530,
+                54: 203.3592,
+                60: 215.9140
+            },
+            "CSB": {
+                36: 162.4367,
+                48: 184.0618,
+                54: 194.4853,
+                60: 206.8665
+            },
+            "MASNOMINA": {
+                24: 144.3720,
+                36: 169.1820,
+                48: 169.0920,
+                54: 194.4851,
+                60: 224.9025
+            }
+        };
+
+        // ----------------------------------------------------
+        // LÓGICA DE INICIALIZACIÓN Y EVENTOS
+        // ----------------------------------------------------
+
+        // Referencias a elementos del DOM
+        const form = document.getElementById('calculator-form');
+        const productoSelect = document.getElementById('producto');
+        const plazoSelect = document.getElementById('plazo');
+        const montoInputGroup = document.getElementById('input-monto-group');
+        const descuentoInputGroup = document.getElementById('input-descuento-group');
+        const montoInput = document.getElementById('monto-solicitado');
+        const descuentoInput = document.getElementById('descuento-mensual-input');
+        const resultsSection = document.getElementById('results-section');
+        const errorMessage = document.getElementById('error-message');
+        const modeRadios = document.getElementsByName('calculation-mode');
+
+        let currentMode = 'monto'; // Estado inicial: Calcular Descuento (Modo 1)
+
+        /**
+         * Función auxiliar para formatear números como moneda.
+         * @param {number} number - El número a formatear.
+         * @returns {string} Número formateado como moneda MXN.
+         */
+        function formatCurrency(number) {
+            if (isNaN(number) || !isFinite(number)) return '$0.00';
+            return new Intl.NumberFormat('es-MX', {
+                style: 'currency',
+                currency: 'MXN',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(number);
+        }
+
+        /**
+         * Inicializa los selectores de Producto y Plazo con los datos del FACTORES_CREDITO.
+         */
+        function initializeSelectors() {
+            // Llenar Productos
+            Object.keys(FACTORES_CREDITO).forEach(producto => {
+                const option = document.createElement('option');
+                option.value = producto;
+                option.textContent = producto;
+                productoSelect.appendChild(option);
+            });
+
+            // Llenar Plazos (Obtener todos los plazos únicos de todos los productos)
+            const allPlazos = new Set();
+            Object.values(FACTORES_CREDITO).forEach(factoresPlazo => {
+                Object.keys(factoresPlazo).forEach(plazo => allPlazos.add(parseInt(plazo)));
+            });
+            
+            const sortedPlazos = Array.from(allPlazos).sort((a, b) => a - b);
+
+            sortedPlazos.forEach(plazo => {
+                const option = document.createElement('option');
+                option.value = plazo;
+                option.textContent = `${plazo} meses`;
+                plazoSelect.appendChild(option);
+            });
+        }
+        
+        /**
+         * Muestra u oculta el campo de entrada según el modo de cálculo.
+         * También limpia el valor del campo oculto.
+         */
+        function toggleInputMode(mode) {
+            currentMode = mode;
+            if (mode === 'monto') {
+                montoInputGroup.style.display = 'block';
+                descuentoInputGroup.style.display = 'none';
+                descuentoInput.value = ''; // Limpiar campo oculto
+            } else {
+                montoInputGroup.style.display = 'none';
+                descuentoInputGroup.style.display = 'block';
+                montoInput.value = ''; // Limpiar campo oculto
+            }
+            calculate(); // Recalcular con el nuevo modo si es posible
+        }
+
+        /**
+         * Obtiene el factor para el producto y plazo seleccionados.
+         * @returns {number|null} El factor porcentual o null si no se encuentra.
+         */
+        function getFactor() {
+            const producto = productoSelect.value;
+            const plazo = plazoSelect.value;
+            
+            if (producto && plazo) {
+                const factor = FACTORES_CREDITO[producto]?.[parseInt(plazo)];
+                return factor !== undefined ? factor : null;
+            }
+            return null;
+        }
+
+        /**
+         * Muestra un mensaje de error o lo oculta.
+         */
+        function displayError(message = '') {
+            if (message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                resultsSection.innerHTML = '<p style="text-align: center; color: #ccc;">Complete las entradas para ver el resultado.</p>';
+            } else {
+                errorMessage.style.display = 'none';
+            }
+        }
+
+        /**
+         * 3. LÓGICA DE CÁLCULO - Ejecuta el cálculo principal.
+         */
+        function calculate() {
+            displayError(''); // Limpiar errores anteriores
+
+            const factor = getFactor();
+            const plazo = parseFloat(plazoSelect.value);
+            
+            if (!factor || isNaN(plazo)) {
+                // Si faltan Producto o Plazo, limpiar y mostrar mensaje de guía
+                resultsSection.innerHTML = '<p style="text-align: center; color: #ccc;">Seleccione un Producto y un Plazo válidos.</p>';
+                return; 
+            }
+
+            const factorDecimal = factor / 100;
+            let resultsHTML = '';
+            
+            if (currentMode === 'monto') {
+                // A. MODO 1: Monto Solicitado -> Descuento
+                const monto = parseFloat(montoInput.value);
+
+                if (isNaN(monto) || monto <= 0) {
+                    resultsSection.innerHTML = '<p style="text-align: center; color: #ccc;">Complete las entradas para ver el resultado.</p>';
+                    return;
+                }
+
+                // Fórmula: D = (Monto Solicitado * (Factor / 100)) / Plazo
+                const descuentoMensual = (monto * factorDecimal) / plazo;
+                const montoTotalPagar = descuentoMensual * plazo;
+
+                resultsHTML = `
+                    <div class="result-item">
+                        <span>Factor Aplicado (${plazo}m):</span>
+                        <span class="result-value">${factor.toFixed(4)}%</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Monto Solicitado ($P$):</span>
+                        <span class="result-value">${formatCurrency(monto)}</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Descuento Mensual ($D$):</span>
+                        <span class="result-value">${formatCurrency(descuentoMensual)}</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Monto Total a Pagar:</span>
+                        <span class="result-value">${formatCurrency(montoTotalPagar)}</span>
+                    </div>
+                `;
+
+            } else {
+                // B. MODO 2: Descuento Mensual -> Monto
+                const descuento = parseFloat(descuentoInput.value);
+
+                if (isNaN(descuento) || descuento <= 0) {
+                    resultsSection.innerHTML = '<p style="text-align: center; color: #ccc;">Complete las entradas para ver el resultado.</p>';
+                    return;
+                }
+                
+                // Fórmula: P = (Descuento Mensual * Plazo) / (Factor / 100)
+                const montoAlcanzado = (descuento * plazo) / factorDecimal;
+
+                resultsHTML = `
+                    <div class="result-item">
+                        <span>Factor Aplicado (${plazo}m):</span>
+                        <span class="result-value">${factor.toFixed(4)}%</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Descuento Mensual ($D$):</span>
+                        <span class="result-value">${formatCurrency(descuento)}</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Plazo:</span>
+                        <span class="result-value">${plazo} meses</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Monto de Préstamo que Alcanza ($P$):</span>
+                        <span class="result-value">${formatCurrency(montoAlcanzado)}</span>
+                    </div>
+                `;
+            }
+            
+            resultsSection.innerHTML = resultsHTML;
+        }
+
+        // ----------------------------------------------------
+        // ASIGNACIÓN DE EVENT LISTENERS
+        // ----------------------------------------------------
+        
+        // 1. Alternar entre modos de cálculo
+        modeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => toggleInputMode(e.target.value));
+        });
+
+        // 2. Calcular al cambiar cualquier input/select
+        form.addEventListener('input', calculate);
+
+        // Inicializar la aplicación
+        initializeSelectors();
+        toggleInputMode(currentMode); // Asegurar el estado inicial
+        
+    </script>
+    
+    <!-- Se han removido los scripts de simulación de PWA (manifest y service worker) para evitar el SecurityError. -->
+</body>
+</html>
